@@ -1,4 +1,4 @@
-# uTPro GeoLocation for Umbraco
+# uTPro Geo Location for Umbraco
 
 IP-based visitor country detection for Umbraco multi-language sites. Resolves visitor country via
 CDN headers (Cloudflare, AWS CloudFront, Azure Front Door) with an **offline MMDB fallback** —
