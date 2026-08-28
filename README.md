@@ -18,10 +18,14 @@ Works with **Umbraco 16, 17 and 18** (multi-targeted `net9.0` / `net10.0`).
 
 - **Multi-source detection chain** (first hit wins):
   1. **Cloudflare** — `CF-IPCountry` header
-  2. **AWS CloudFront** — `CloudFront-Viewer-Country` header
-  3. **Azure Front Door** — `X-Azure-ClientIP-Country` / `X-Azure-Geo-Country` header
-  4. **Forwarded IP resolution** — handles `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP`
-  5. **Offline MMDB** — local iplocate.io database (no external API calls)
+  2. **Akamai** — `X-Akamai-Edgescape` header (parses `country_code=XX`)
+  3. **Fastly** — `X-Geo-Country` or `Fastly-Client-Country` header
+  4. **Vercel** — `X-Vercel-IP-Country` header
+  5. **Netlify** — `X-Country` header
+  6. **AWS CloudFront** — `CloudFront-Viewer-Country` header
+  7. **Azure Front Door** — `X-Azure-ClientIP-Country` / `X-Azure-Geo-Country` header
+  8. **Forwarded IP resolution** — handles `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP`
+  9. **Offline MMDB** — local iplocate.io database (no external API calls)
 - **Two output modes**:
   - `GetCountryCode()` — raw ISO 3166-1 alpha-2 code (e.g. "VN", "US")
   - `Detect()` → full `GeoLocationResult` with mapped `CultureInfo`
@@ -76,18 +80,13 @@ All settings are optional — the package works out of the box. Configure under
   "uTPro": {
     "Feature": {
       "GeoLocation": {
-        "AutoSetCulture": false,
-        "DatabasePath": "App_Data/GeoLocation/iplocate-country.mmdb",
-        "UseCookie": true,
-        "CookieName": "utpro_geo_country",
-        "CookieMaxAgeDays": 30,
-        "FallbackCulture": "en",
-        "Providers": [],
+        "EnableProviders": {
+          "Cloudflare": true
+        },
         "CultureMap": {
           "VN": "vi-VN",
           "US": "en-US",
-          "JP": "ja-JP",
-          "KR": "ko-KR"
+          "JP": "ja-JP"
         }
       }
     }
@@ -97,14 +96,19 @@ All settings are optional — the package works out of the box. Configure under
 
 | Key | Default | Description |
 |---|---|---|
-| `AutoSetCulture` | `false` | When `true`, middleware sets `Thread.CurrentThread.CurrentCulture` and `CurrentUICulture` for the request — compatible with Umbraco SurfaceController, ViewComponent, and API controllers. |
+| `EnableProviders` | all `false` | Toggle CDN providers: `Cloudflare`, `Akamai`, `Fastly`, `Vercel`, `Netlify`, `AwsCloudFront`, `AzureFrontDoor`. Only enable what you use. |
+| `CustomCountryHeader` | `""` | Custom header with 2-letter country code (highest priority, only active when set). |
+| `CustomIpHeader` | `""` | Custom header with client IP (only active when set). |
+| `AutoSetCulture` | `false` | When `true`, middleware sets `Thread.CurrentThread.CurrentCulture` for the Umbraco pipeline. |
 | `DatabasePath` | `App_Data/GeoLocation/iplocate-country.mmdb` | Path to the offline MMDB file (relative to ContentRoot or absolute). |
 | `UseCookie` | `true` | Persist detected country in a cookie to skip detection on subsequent requests. |
 | `CookieName` | `utpro_geo_country` | Cookie name. |
 | `CookieMaxAgeDays` | `30` | Cookie lifetime in days. |
-| `FallbackCulture` | `en` | Culture used when no country is detected and no cookie exists. |
-| `Providers` | `[]` (all) | Ordered list of provider names to use. Empty = all providers in default order. |
+| `FallbackCulture` | `en` | Culture used when no country is detected. |
 | `CultureMap` | `{}` | Custom country→culture overrides. Keys: ISO 3166-1 alpha-2. Values: .NET culture names. |
+
+> **Note:** By default only Forwarded (IP resolution) and Offline (MMDB) providers are active.
+> CDN providers must be explicitly enabled via `EnableProviders`.
 
 ---
 
@@ -123,16 +127,15 @@ handles the rest.
 
 ## Updating the Offline Database
 
-The offline `.mmdb` ships with the NuGet package. Two update strategies:
+The offline `.mmdb` ships with the NuGet package. You can update it **manually at any time**:
 
-### Manual update
-Download the latest database from [iplocate.io](https://github.com/iplocate/ip-address-databases)
-and replace `App_Data/GeoLocation/iplocate-country.mmdb` in your deployed site.
+1. Download the latest `ip-to-country.mmdb` from
+   [iplocate.io](https://github.com/iplocate/ip-address-databases/tree/main/ip-to-country)
+2. Rename to `iplocate-country.mmdb`
+3. Replace `App_Data/GeoLocation/iplocate-country.mmdb` in your deployed site
+4. Restart the application
 
-### NuGet package upgrade
-A GitHub Action runs on schedule (every 1–2 days), pulls the latest iplocate.io database, and if
-changed, bumps the package patch version and pushes to NuGet. Upgrading the package gives you
-the latest DB automatically.
+NuGet package upgrades will **not overwrite** your manually updated file — your custom DB is safe.
 
 ---
 

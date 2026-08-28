@@ -1,58 +1,87 @@
 # Offline Database
 
+## What it is
+
+The offline database is a local `.mmdb` file (MaxMind DB format) that maps IP addresses to country
+codes. It is used as the **last resort** when no CDN header (Cloudflare, AWS, Azure) provides the
+country.
+
+No external API calls are made — the lookup is a fast, local, memory-mapped file read.
+
 ## Source
 
-The offline IP-to-country database comes from [iplocate.io](https://github.com/iplocate/ip-address-databases),
-an open-source project that provides free, daily-updated IP geolocation databases in MMDB
-(MaxMind DB) format.
+The database comes from [iplocate.io](https://www.iplocate.io/open-source), an open-source project
+that provides free, daily-updated IP-to-country databases.
 
-## Included database
+## Shipped with the NuGet package
 
-The NuGet package ships with a snapshot of the database at `App_Data/GeoLocation/iplocate-country.mmdb`.
-This file is deployed automatically when you install the package.
+When you install `uTPro.Feature.GeoLocation`, the MMDB file is deployed automatically to
+`App_Data/GeoLocation/iplocate-country.mmdb` in your application root.
 
-## Updating the database
+## Updating the database manually
 
-### Option 1: Manual replacement
+IP-to-country mappings change over time as IP blocks are reassigned. You can update the database
+at any time without upgrading the NuGet package.
 
-1. Download the latest `iplocate-country.mmdb` from the
-   [iplocate.io releases](https://github.com/iplocate/ip-address-databases/tree/main/ip-to-country).
-2. Replace the file at `App_Data/GeoLocation/iplocate-country.mmdb` in your deployed application.
-3. Restart the application (the MMDB reader is loaded once on first use).
+### Steps
 
-### Option 2: NuGet package upgrade
+1. Download the latest database from
+   [iplocate.io GitHub](https://github.com/iplocate/ip-address-databases/tree/main/ip-to-country)
+   (file: `ip-to-country.mmdb`)
 
-A GitHub Action on the `uTPro.Feature.GeoLocation.Src` repository:
-- Runs on a schedule (every 1–2 days)
-- Downloads the latest iplocate.io database
-- Compares checksums — if changed, bumps the patch version and packs a new NuGet
-- Pushes to NuGet.org automatically
+2. Rename the file to `iplocate-country.mmdb`
 
-Upgrading the package (`dotnet update package uTPro.Feature.GeoLocation`) gives you the latest DB.
+3. Replace the existing file at:
+   ```
+   {YourProject}/App_Data/GeoLocation/iplocate-country.mmdb
+   ```
+
+4. Restart the application
+
+The MMDB reader loads the file once on the first request. After replacing the file, a restart
+ensures the new data is picked up.
+
+> **Tip:** You can automate this with a scheduled task or script that downloads the latest file
+> from iplocate.io and restarts the app pool.
+
+### NuGet upgrade does NOT overwrite your file
+
+If you manually replaced the `.mmdb` file, upgrading the NuGet package will **not** overwrite
+your custom file. NuGet only deploys contentFiles on first install. Your manual update is safe.
 
 ## Custom database path
 
-If you prefer to store the MMDB file elsewhere:
+To store the MMDB file at a different location (e.g. a shared network drive for load-balanced
+deployments):
 
 ```json
 {
   "uTPro": {
     "Feature": {
       "GeoLocation": {
-        "DatabasePath": "D:\\GeoData\\custom-country.mmdb"
+        "DatabasePath": "App_Data/GeoLocation/iplocate-country.mmdb"
       }
     }
   }
 }
 ```
 
-Absolute and relative paths are both supported. Relative paths resolve from `ContentRootPath`.
+This is the default path — relative to your project's `ContentRootPath`. You only need to set it
+explicitly if you want a different location. Both relative and absolute paths are supported.
 
-## Database format compatibility
+## Format compatibility
 
 The offline provider supports two MMDB structures:
 
-1. **iplocate.io format**: `{ "country_code": "VN" }`
-2. **MaxMind GeoLite2 format**: `{ "country": { "iso_code": "VN" } }`
+| Format | Structure | Example source |
+|---|---|---|
+| iplocate.io | `{ "country_code": "VN" }` | [iplocate.io](https://github.com/iplocate/ip-address-databases) |
+| MaxMind GeoLite2 | `{ "country": { "iso_code": "VN" } }` | MaxMind GeoLite2-Country |
 
 This means you can also use a GeoLite2-Country MMDB if you already have a MaxMind license.
+
+## Privacy
+
+- No external API calls — all lookups are local
+- IP addresses are NOT persisted — used only during the request lifetime
+- The MMDB file contains only IP ranges → country code mappings (no personal data)
