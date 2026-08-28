@@ -1,0 +1,40 @@
+{
+  "Category": "Localization",
+  "Title": "uTPro GeoLocation - IP-based Visitor Country Detection",
+  "Description": "Detects the visitor's country from CDN headers (Cloudflare CF-IPCountry, AWS CloudFront-Viewer-Country, Azure Front Door) with an offline MMDB fallback (iplocate.io). Maps country codes to .NET CultureInfo for multi-language Umbraco sites. Pluggable provider chain, configurable culture mapping, cookie persistence, and optional auto-culture middleware. Works with Umbraco 16, 17 and 18.",
+  "AuthorDetails": {
+    "Name": "T4VN",
+    "Url": "https://t4vn.com",
+    "ImageUrl": "https://github.com/t4vn.png",
+    "SyncContributorsFromRepository": true
+  },
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.GeoLocation/main/Image/Screenshots/detection-flow.png",
+      "Caption": "uTPro GeoLocation — Detection flow and provider chain"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/T4VN/uTPro.Feature.GeoLocation/main/Image/Screenshots/integration-flow.png",
+      "Caption": "uTPro GeoLocation — Integration with uTPro multi-language"
+    }
+  ],
+  "LicenseTypes": [
+    "Free"
+  ],
+  "Tags": [
+    "geolocation",
+    "ip",
+    "country",
+    "culture",
+    "locale",
+    "multilanguage",
+    "cloudflare",
+    "i18n",
+    "language detection",
+    "visitor country"
+  ],
+  "LookingForContributors": true,
+  "PackageType": "Package",
+  "DocumentationUrl": "https://github.com/T4VN/uTPro.Feature.GeoLocation",
+  "IssueTrackerUrl": "https://github.com/T4VN/uTPro.Feature.GeoLocation/issues"
+}
